@@ -7,9 +7,11 @@ BorutaShapPySpark is a distributed implementation of the Boruta algorithm with S
 ## Key Features
 
 - **Distributed Processing**: Leverages PySpark for handling datasets that exceed memory limits
+- **Distributed SHAP**: True distributed SHAP calculation without pulling data into memory
 - **Multiple Importance Measures**: Support for SHAP, Gini importance, and permutation importance
 - **Memory Efficient**: Processes data in chunks and uses sampling for large datasets
 - **Scalable**: Can run on clusters with multiple nodes
+- **TreeSHAP Optimization**: Optimized TreeSHAP for tree-based models
 - **Flexible**: Compatible with various PySpark ML models
 - **Easy Integration**: Simple API similar to the original BorutaShap
 
@@ -146,11 +148,45 @@ feature_selector = BorutaShapPySpark(
 - `tentative_features`: List of tentative feature names
 - `feature_importance_history`: List of importance dictionaries for each iteration
 
+## Distributed SHAP Implementation
+
+### How It Works
+
+The distributed SHAP implementation uses several key techniques to avoid pulling large datasets into memory:
+
+1. **Background Sampling**: Creates a small background dataset (typically 1% of data) for SHAP baseline
+2. **Distributed UDFs**: Uses PySpark UDFs to calculate SHAP values on each partition
+3. **TreeSHAP Optimization**: For tree-based models, uses TreeSHAP which is more efficient than KernelSHAP
+4. **Batch Processing**: Processes data in batches across cluster nodes
+5. **Aggregation**: Aggregates SHAP values across partitions to compute feature importance
+
+### SHAP Calculation Modes
+
+- **TreeSHAP**: Used automatically for RandomForest models (fastest)
+- **KernelSHAP**: Used for other model types (more flexible but slower)
+- **Fallback**: Falls back to Gini importance if SHAP calculation fails
+
+### Example: Distributed SHAP
+
+```python
+# Use distributed SHAP - no data pulled into memory
+feature_selector = BorutaShapPySpark(
+    spark_session=spark,
+    importance_measure='shap',  # Distributed SHAP
+    sample_fraction=0.05,       # 5% sample for SHAP calculation
+    classification=True
+)
+
+# Process large dataset without memory issues
+feature_selector.fit(df=large_spark_df, feature_cols=features, target_col='target')
+```
+
 ## Performance Considerations
 
 ### Memory Management
 
 - **Sample Fraction**: Use smaller `sample_fraction` values (0.01-0.1) for very large datasets
+- **Background Size**: Automatically optimized but can be tuned for specific use cases
 - **Partitioning**: Adjust Spark partitions based on your cluster size
 - **Caching**: Cache frequently used DataFrames with `df.cache()`
 

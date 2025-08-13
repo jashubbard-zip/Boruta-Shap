@@ -88,6 +88,72 @@ def test_basic_functionality():
         print(f"❌ Test failed with error: {str(e)}")
         return False
 
+def test_distributed_shap():
+    """Test distributed SHAP calculation."""
+    print("Testing distributed SHAP calculation...")
+    
+    try:
+        # Create small test dataset
+        X, y = make_classification(
+            n_samples=500,  # Smaller dataset for faster testing
+            n_features=10,
+            n_informative=3,
+            n_redundant=3,
+            random_state=42
+        )
+        
+        feature_names = [f'feature_{i}' for i in range(X.shape[1])]
+        df = pd.DataFrame(X, columns=feature_names)
+        df['target'] = y
+        
+        # Initialize Spark session
+        spark = SparkSession.builder \
+            .appName("BorutaShapPySpark_SHAP_Test") \
+            .config("spark.sql.adaptive.enabled", "true") \
+            .getOrCreate()
+        
+        # Convert to Spark DataFrame
+        spark_df = spark.createDataFrame(df)
+        
+        # Initialize feature selector with SHAP
+        feature_selector = BorutaShapPySpark(
+            spark_session=spark,
+            importance_measure='shap',  # Test distributed SHAP
+            classification=True,
+            max_iterations=3,  # Very small number for testing
+            sample_fraction=0.2,  # Higher sample for better SHAP results
+            verbose=False
+        )
+        
+        # Run feature selection
+        feature_selector.fit(
+            df=spark_df,
+            feature_cols=feature_names,
+            target_col='target',
+            verbose=False
+        )
+        
+        # Check that SHAP calculation completed without errors
+        assert hasattr(feature_selector, 'feature_importance_history'), "Missing importance history"
+        assert len(feature_selector.feature_importance_history) > 0, "No importance history recorded"
+        
+        # Check that importance values are reasonable (not all zeros)
+        last_importance = feature_selector.feature_importance_history[-1]
+        non_zero_features = sum(1 for v in last_importance.values() if v > 0)
+        assert non_zero_features > 0, "All SHAP importance values are zero"
+        
+        print(f"   ✅ Distributed SHAP calculated importance for {non_zero_features} features")
+        
+        # Cleanup
+        feature_selector.stop_spark()
+        
+        print("✅ Distributed SHAP test passed!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Distributed SHAP test failed with error: {str(e)}")
+        return False
+
 def test_parameter_validation():
     """Test parameter validation."""
     print("Testing parameter validation...")
@@ -121,7 +187,8 @@ def main():
     
     tests = [
         test_parameter_validation,
-        test_basic_functionality
+        test_basic_functionality,
+        test_distributed_shap
     ]
     
     passed = 0

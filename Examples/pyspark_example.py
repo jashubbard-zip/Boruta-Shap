@@ -65,15 +65,16 @@ def main():
     print("4. Initializing BorutaShapPySpark...")
     feature_selector = BorutaShapPySpark(
         spark_session=spark,
-        importance_measure='gini',  # Use Gini importance for faster processing
+        importance_measure='shap',  # Use distributed SHAP calculation
         classification=True,
         percentile=100,
         pvalue=0.05,
         max_iterations=15,  # Limit iterations for demo
-        sample_fraction=0.1,  # Sample 10% for calculations
+        sample_fraction=0.1,  # Sample 10% for SHAP calculations
         verbose=True
     )
-    print("   BorutaShapPySpark initialized successfully!\n")
+    print("   BorutaShapPySpark initialized successfully!")
+    print("   Using distributed SHAP calculation - no data pulled into memory!\n")
     
     # 5. Run feature selection
     print("5. Running feature selection...")
