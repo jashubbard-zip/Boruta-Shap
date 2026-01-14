@@ -6,17 +6,6 @@ BorutaShap is a wrapper feature selection method which combines both the Boruta 
 
 Despite BorutaShap's runtime improvements the SHAP TreeExplainer scales linearly with the number of observations making it's use cumbersome for large datasets. To combat this, BorutaShap includes a sampling procedure which uses the smallest possible subsample of the data availble at each iteration of the algorithm. It finds this sample by comparing the distributions produced by an isolation forest of the sample and the data using ks-test. From experiments, this procedure can reduce the run time up to 80% while still creating a valid approximation of the entire data set. Even with these improvments the user still might want a faster solution so BorutaShap has included an option to use the mean decrease in gini impurity. This importance measure is independent of the size dataset as it uses the tree's structure to compute a global feature ranking making it much faster than SHAP at larger datasets. Although this metric returns somewhat comparable feature subsets, it is not a reliable measure of global feature importance in spite of it's wide spread use. Thus, I would recommend to using the SHAP metric whenever possible.
 
-## 🚀 New: PySpark Implementation for Large-Scale Datasets
-
-For handling very large datasets that don't fit in memory, we now provide **BorutaShapPySpark** - a distributed implementation using PySpark. This allows you to:
-
-- Process datasets of unlimited size using distributed computing
-- Leverage cluster resources for faster processing
-- Use memory-efficient operations with data sampling
-- Scale horizontally across multiple nodes
-
-See [README_PySpark.md](README_PySpark.md) for detailed documentation and examples.
-
 ### Algorithm
 
 1. Start by creating new copies of all the features in the data set and name them shadow + feature_name, shuffle these newly added features to remove their correlations with the response variable.
